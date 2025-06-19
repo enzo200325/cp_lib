@@ -1,65 +1,109 @@
 /**
- * Author: Benjamin Qi, Oleksandr Kulkov, chilli
- * Date: 2020-01-12
- * License: CC0
- * Source: https://codeforces.com/blog/entry/53170, https://github.com/bqi343/USACO/blob/master/Implementations/content/graphs%20(12)/Trees%20(10)/HLD%20(10.3).h
- * Description: Decomposes a tree into vertex disjoint heavy paths and light
- * edges such that the path from any leaf to the root contains at most log(n)
- * light edges. Code does additive modifications and max queries, but can
- * support commutative segtree modifications/queries on paths and subtrees.
- * Takes as input the full adjacency list. VALS\_EDGES being true means that
- * values are stored in the edges, as opposed to the nodes. All values
- * initialized to the segtree default. Root must be 0.
+ * Author: Enzo de Almeida 
+ * Date: 2025-06-19
+ * License: 
+ * Source: 
+ * Description: 
  * Time: O((\log N)^2)
  * Status: stress-tested against old HLD
  */
 #pragma once
 
-#include "../data-structures/LazySegmentTree.h"
+#include "../data-structures/SegmentTreeLazy.h"
 
-template <bool VALS_EDGES> struct HLD {
-	int N, tim = 0;
-	vector<vi> adj;
-	vi par, siz, rt, pos;
-	Node *tree;
-	HLD(vector<vi> adj_)
-		: N(sz(adj_)), adj(adj_), par(N, -1), siz(N, 1),
-		  rt(N),pos(N),tree(new Node(0, N)){ dfsSz(0); dfsHld(0); }
-	void dfsSz(int v) {
-		for (int& u : adj[v]) {
-			adj[u].erase(find(all(adj[u]), v));
-			par[u] = v;
-			dfsSz(u);
-			siz[v] += siz[u];
-			if (siz[u] > siz[adj[v][0]]) swap(u, adj[v][0]);
-		}
-	}
-	void dfsHld(int v) {
-		pos[v] = tim++;
-		for (int u : adj[v]) {
-			rt[u] = (u == adj[v][0] ? rt[v] : u);
-			dfsHld(u);
-		}
-	}
-	template <class B> void process(int u, int v, B op) {
-		for (;; v = par[rt[v]]) {
-			if (pos[u] > pos[v]) swap(u, v);
-			if (rt[u] == rt[v]) break;
-			op(pos[rt[v]], pos[v] + 1);
-		}
-		op(pos[u] + VALS_EDGES, pos[v] + 1);
-	}
-	void modifyPath(int u, int v, int val) {
-		process(u, v, [&](int l, int r) { tree->add(l, r, val); });
-	}
-	int queryPath(int u, int v) { // Modify depending on problem
-		int res = -1e9;
-		process(u, v, [&](int l, int r) {
-				res = max(res, tree->query(l, r));
-		});
-		return res;
-	}
-	int querySubtree(int v) { // modifySubtree is similar
-		return tree->query(pos[v] + VALS_EDGES, pos[v] + siz[v]);
-	}
-};
+const int maxn = 2e5 + 50;
+int a[maxn];
+vector<int> adj[maxn];
+Seg seg; // built in main
+
+struct hld {
+    int tin[maxn], tout[maxn], par[maxn], head[maxn], eul[maxn], sz[maxn], T;
+
+    hld() {}
+    void dfs(int u, int p = -1) {
+        sz[u] = 1;
+        par[u] = p;
+        if (par[u] > -1) adj[u].erase(find(adj[u].begin(), adj[u].end(), par[u]));
+        for (int& v : adj[u]) {
+            dfs(v, u);
+            sz[u] += sz[v];
+            if (sz[v] > sz[adj[u][0]]) swap(v, adj[u][0]);
+        }
+    }
+    void dfs_hld(int u) {
+        tin[u] = T++;
+        eul[tin[u]] = u;
+        for (int v : adj[u]) {
+            head[v] = v == adj[u][0] ? head[u] : v;
+            dfs_hld(v);
+        }
+        tout[u] = T;
+    }
+
+    void build() {
+        dfs(0);
+        dfs_hld(0);
+        seg.build(T, a, eul);
+    }
+
+    int lca(int u, int v) {
+        while (head[u] != head[v]) {
+            if (tin[u] < tin[v]) swap(u, v);
+            u = par[head[u]];
+        }
+        if (tin[u] < tin[v]) swap(u, v);
+        return u;
+    }
+
+    ll query(int u, int v) {
+        ll uans = 0, vans = 0;
+        while (head[u] != head[v]) {
+            if (tin[u] > tin[v]) {
+                uans += seg.query(tin[head[u]], tin[u]);
+                u = par[head[u]];
+            }
+            else {
+                vans += seg.query(tin[head[v]], tin[v]);
+                v = par[head[v]];
+            }
+        }
+        if (tin[u] < tin[v]) vans += seg.query(tin[u], tin[v]);
+        else uans += seg.query(tin[v], tin[u]);
+
+        return uans + vans;
+    }
+
+    void update(int u, int val) {
+        seg.update(tin[u], val);
+    }
+} hld;
+
+int main() {
+    ios_base::sync_with_stdio(0);
+    cin.tie(0);
+
+
+    int n, q; cin >> n >> q;
+    for (int i = 0; i < n; i++) cin >> a[i];
+    for (int i = 0; i < n-1; i++) {
+        int u, v; cin >> u >> v; u--; v--;
+        adj[u].emplace_back(v);
+        adj[v].emplace_back(u);
+    }
+    seg.build(n);
+    hld.build();
+
+    while (q--) {
+        int id; cin >> id;
+        if (id == 1) {
+            int u, x; cin >> u >> x; u--;
+            hld.update(u, x);
+        }
+        else {
+            int u; cin >> u; u--;
+            cout << hld.query(u, 0) << endl;
+        }
+    }
+}
+// https://cses.fi/problemset/task/1138
+
