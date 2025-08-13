@@ -15,7 +15,7 @@ vector<pt> minkowski(vector<pt> a, vector<pt> b) {
 	if (a.size() > b.size()) swap(a, b);
 	if (!a.size()) return {};
 	if (a.size() == 1) {
-        for (P &p : b) p = p + a[0]; 
+        for (pt &p : b) p = p + a[0]; 
 		return b;
 	}
 	rotate(begin(a), min_element(all(a)), end(a));
