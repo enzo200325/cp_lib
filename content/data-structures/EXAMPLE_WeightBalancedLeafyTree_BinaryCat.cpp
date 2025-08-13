@@ -50,17 +50,76 @@ void dbg_print(bitset<T> b) {cerr << b;}
  
 // ============================================================================================== // 
 
-typedef long long ll; 
+typedef long long ll;
 
-void solve() {
+const int maxn = 5e5 + 500;
+int ch[2*maxn*30][2], val[2*maxn*30], tot, rt[maxn];
+ll sz[2*maxn*30];
+const ll lim = 1e18 + 100;
 
-} 
+int new_x() {
+    int u = tot++;
+    return u;
+}
+int new_l(int v) {
+    int u = new_x();
+    sz[u] = 1;
+    val[u] = v;
+    return u;
+}
+
+pair<int, int> cut(int u) {
+    return make_pair(ch[u][0], ch[u][1]);
+}
+
+void pull(int u) {
+    sz[u] = min(lim, sz[ch[u][0]] + sz[ch[u][1]]);
+}
+int join(int u, int v) {
+    int x = new_x();
+    ch[x][0] = u;
+    ch[x][1] = v;
+    pull(x);
+    return x;
+}
+int merge(int u, int v) {
+    if (sz[u] == lim) return u;
+    if (sz[u] > 3 * sz[v]) {
+        auto [x, y] = cut(u);
+        if ((sz[y] + sz[v]) > 3 * sz[x]) {
+            auto [k, h] = cut(y);
+            return merge(merge(x, k), merge(h, v));
+        }
+        else return merge(x, merge(y, v));
+    }
+    else if (sz[v] > 3 * sz[u]) {
+        auto [x, y] = cut(v);
+        if ((sz[x] + sz[u]) > 3 * sz[v]) {
+            auto [k, h] = cut(x);
+            return merge(merge(u, k), merge(h, y));
+        }
+        else return merge(merge(u, x), y);
+    }
+    else return join(u, v);
+}
+
+int query(int u, ll cur) {
+    if (sz[u] == 1) return val[u];
+    if (sz[ch[u][0]] >= cur) return query(ch[u][0], cur);
+    else return query(ch[u][1], cur - sz[ch[u][0]]);
+}
 
 int main() {
-    ios_base::sync_with_stdio(0); 
-    cin.tie(0); 
+    ios_base::sync_with_stdio(0);
+    cin.tie(0);
 
-    int tt; cin >> tt; while (tt--) solve(); 
-} 
-
-
+    rt[0] = new_l(0);
+    rt[1] = new_l(1);
+    int q; cin >> q;
+    for (int i = 2; i < q + 2; i++) {
+        int l, r; cin >> l >> r;
+        ll x; cin >> x;
+        rt[i] = merge(rt[l], rt[r]);
+        cout << query(rt[i], x) << endl;
+    }
+}
