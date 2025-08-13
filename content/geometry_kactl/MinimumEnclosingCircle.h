@@ -13,7 +13,7 @@
 
 pair<pt, double> mec(vector<pt> ps) {
 	shuffle(all(ps), mt19937(time(0)));
-	P o = ps[0];
+	pt o = ps[0];
 	double r = 0, EPS = 1 + 1e-8;
     for (int i = 0; i < ps.size(); i++) if ((o - ps[i]).dist() > r * EPS) {
 		o = ps[i], r = 0;
