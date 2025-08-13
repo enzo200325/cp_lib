@@ -10,8 +10,8 @@
 
 #include "Point.h"
 
-using P = Point<ll>; 
-vector<P> minkowski(vector<P> a, vector<P> b) {
+using pt = Point<ll>; 
+vector<pt> minkowski(vector<pt> a, vector<pt> b) {
 	if (a.size() > b.size()) swap(a, b);
 	if (!a.size()) return {};
 	if (a.size() == 1) {
@@ -22,7 +22,7 @@ vector<P> minkowski(vector<P> a, vector<P> b) {
 	rotate(begin(b), min_element(all(b)), end(b));
 	a.emplace_back(a[0]), a.emplace_back(a[1]);
 	b.emplace_back(b[0]), b.emplace_back(b[1]);
-	vector<P>result;
+	vector<pt>result;
 	int i = 0, j = 0;
 	while (i < (int)a.size()-2 || j < (int)b.size()-2) {
 		result.emplace_back(a[i]+b[j]);
